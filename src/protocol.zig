@@ -1,5 +1,5 @@
 const std = @import("std");
-const json = @import("../json/json.zig");
+const json = @import("./zson/src/main.zig");
 const mem = std.mem;
 const warn = std.debug.warn;
 
