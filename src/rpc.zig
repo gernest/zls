@@ -34,9 +34,11 @@ pub const Reader = struct.{
     ///
     /// Convenient for streaming purposes where input can be streamed and decoded
     /// as it flows.
-    pub fn readStream(self: *Reader, stream: var) !proto.Header {
+    pub fn readStream(self: *Reader, stream: var) !proto.Message {
         var list = std.ArrayList(u8).init(self.allocator);
+        defer list.deinit();
         var header: proto.Header = undefined;
+        var message: proto.Message = undefined;
         var crlf = []u8.{0} ** 2;
         var in_header = true;
         var end_content_length = false;
@@ -58,6 +60,10 @@ pub const Reader = struct.{
                             const v = try std.fmt.parseInt(u64, s, 10);
                             header.content_length = v;
                             end_content_length = false;
+
+                            // clear the buffer, we don't want the content body
+                            // to be messed up.
+                            try list.resize(0);
                         }
                     }
                 },
@@ -88,73 +94,22 @@ pub const Reader = struct.{
                     }
                 },
                 '}' => {
-                    balanced -= 1;
-                    if (balanced == 0) return header;
-                },
-                else => {
-                    // skip spaces in the header section to avoid trimming
-                    // spaces before reading values.
-                    if (in_header and ch == ' ') continue;
                     try list.append(ch);
-                },
-            }
-        }
-    }
-
-    fn read(self: *Reader, stream: var) !proto.Message {
-        var list = std.ArrayList(u8).init(self.allocator);
-        var header: proto.Header = undefined;
-        var message: proto.Message = undefined;
-        var crlf = []u8.{0} ** 2;
-        var in_header = true;
-        var end_content_length = false;
-        while (true) {
-            const ch = try stream.readByte();
-            switch (ch) {
-                '\r' => if (in_header) crlf[0] = '\r',
-                '\n' => {
-                    if (in_header) {
-                        if (crlf[0] != '\r') {
-                            return error.BadInput;
-                        }
-                        // we have reached delimiter now
-                        crlf[1] = crlf[1] + 1;
-                        crlf[0] = 0;
-                        if (end_content_length) {
-                            const s = list.toSlice();
-                            const v = try std.fmt.parseInt(u64, s, 10);
-                            header.content_length = v;
-
-                            // we know the size, we should read the content part
-                            // of the streamed message.
-                            try list.resize(@intCast(usize, v + 2));
-                            var slice = list.toSlice();
-                            const size = try stream.readFull(slice);
-                            assert(size == slice.len);
-                            const sv = slice;
-                            warn("{}", sv);
-                            var p = json.Parser.init(self.allocator, true);
-                            var value = try p.parse(slice);
-                            message.header = header;
-                            message.content = value;
-                            return message;
-                        }
-                    }
-                },
-                ':' => {
-                    if (in_header) {
-                        const h = list.toOwnedSlice();
-                        if (mem.eql(u8, h, content_length)) {
-                            end_content_length = true;
-                        } else {
-                            return error.BadInput;
-                        }
-                    } else {
-                        try list.append(ch);
+                    balanced -= 1;
+                    const v = list.toSlice();
+                    if (balanced == 0) {
+                        // we are at the end otf the top level json object. We
+                        // parse the body too json values.
+                        //
+                        const buf = list.toOwnedSlice();
+                        var p = json.Parser.init(self.allocator, true);
+                        var value = try p.parse(buf);
+                        message.header = header;
+                        message.content = value;
+                        return message;
                     }
                 },
                 else => {
-                    if (!in_header) unreachable;
                     // skip spaces in the header section to avoid trimming
                     // spaces before reading values.
                     if (in_header and ch == ' ') continue;
