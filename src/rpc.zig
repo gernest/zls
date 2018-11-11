@@ -15,11 +15,24 @@ const default_message_size: usize = 8192;
 // content.
 const content_length = "Content-Length";
 
+/// Reader defines method for reading rpc messages.
 pub const Reader = struct.{
-    stream: *InStream,
     allocator: *mem.Allocator,
 
-    pub fn readHeader(self: *Reader) !proto.Header {
+    pub fn init(a: *mem.Allocator) Reader {
+        return Reader.{ .allocator = a };
+    }
+
+    /// readStream decodes a rpc message from stream. stream must implement the
+    /// ioo.Instream interface.
+    ///
+    /// This reads one byte at a time from the stream. No verification of the
+    /// message is done , meaning we don't check if the content has the same
+    /// length as Content-Length header.
+    ///
+    /// Convenient for streaming purposes where input can be streamed and decoded
+    /// as it flows.
+    pub fn readStream(self: *Reader, stream: var) !proto.Header {
         var list = std.ArrayList(u8).init(self.allocator);
         var header: proto.Header = undefined;
         var crlf = []u8.{0} ** 2;
@@ -27,7 +40,7 @@ pub const Reader = struct.{
         var end_content_length = false;
         var balanced: usize = 0;
         while (true) {
-            const ch = try self.stream.readByte();
+            const ch = try stream.readByte();
             switch (ch) {
                 '\r' => if (in_header) crlf[0] = '\r',
                 '\n' => {
@@ -84,32 +97,5 @@ pub const Reader = struct.{
                 },
             }
         }
-    }
-};
-
-// SliceInStream  implements io.InStream but reads from a slice.
-pub const SliceInStream = struct.{
-    const Self = @This();
-    pub stream: InStream,
-    pos: usize,
-    slice: []const u8,
-
-    pub fn init(slice: []const u8) Self {
-        return Self.{
-            .slice = slice,
-            .pos = 0,
-            .stream = InStream.{ .readFn = readFn },
-        };
-    }
-
-    fn readFn(in_stream: *InStream, dest: []u8) ReadError!usize {
-        const self = @fieldParentPtr(Self, "stream", in_stream);
-        const size = math.min(dest.len, self.slice.len - self.pos);
-        const end = self.pos + size;
-
-        mem.copy(u8, dest[0..size], self.slice[self.pos..end]);
-        self.pos = end;
-
-        return size;
     }
 };
