@@ -3,9 +3,11 @@ const os = std.os;
 const io = std.io;
 const mem = std.mem;
 const warn = std.debug.warn;
+const assert = std.debug.assert;
 const math = std.math;
 const proto = @import("protocol.zig");
 const builtin = @import("builtin");
+const json = @import("./zson/src/main.zig");
 
 pub const ReadError = os.File.ReadError || error.{BadInput};
 pub const InStream = io.InStream(ReadError);
@@ -90,6 +92,69 @@ pub const Reader = struct.{
                     if (balanced == 0) return header;
                 },
                 else => {
+                    // skip spaces in the header section to avoid trimming
+                    // spaces before reading values.
+                    if (in_header and ch == ' ') continue;
+                    try list.append(ch);
+                },
+            }
+        }
+    }
+
+    fn read(self: *Reader, stream: var) !proto.Message {
+        var list = std.ArrayList(u8).init(self.allocator);
+        var header: proto.Header = undefined;
+        var message: proto.Message = undefined;
+        var crlf = []u8.{0} ** 2;
+        var in_header = true;
+        var end_content_length = false;
+        while (true) {
+            const ch = try stream.readByte();
+            switch (ch) {
+                '\r' => if (in_header) crlf[0] = '\r',
+                '\n' => {
+                    if (in_header) {
+                        if (crlf[0] != '\r') {
+                            return error.BadInput;
+                        }
+                        // we have reached delimiter now
+                        crlf[1] = crlf[1] + 1;
+                        crlf[0] = 0;
+                        if (end_content_length) {
+                            const s = list.toSlice();
+                            const v = try std.fmt.parseInt(u64, s, 10);
+                            header.content_length = v;
+
+                            // we know the size, we should read the content part
+                            // of the streamed message.
+                            try list.resize(@intCast(usize, v + 2));
+                            var slice = list.toSlice();
+                            const size = try stream.readFull(slice);
+                            assert(size == slice.len);
+                            const sv = slice;
+                            warn("{}", sv);
+                            var p = json.Parser.init(self.allocator, true);
+                            var value = try p.parse(slice);
+                            message.header = header;
+                            message.content = value;
+                            return message;
+                        }
+                    }
+                },
+                ':' => {
+                    if (in_header) {
+                        const h = list.toOwnedSlice();
+                        if (mem.eql(u8, h, content_length)) {
+                            end_content_length = true;
+                        } else {
+                            return error.BadInput;
+                        }
+                    } else {
+                        try list.append(ch);
+                    }
+                },
+                else => {
+                    if (!in_header) unreachable;
                     // skip spaces in the header section to avoid trimming
                     // spaces before reading values.
                     if (in_header and ch == ' ') continue;

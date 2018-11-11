@@ -72,6 +72,5 @@ pub const Header = struct.{
 // resources.
 pub const Message = struct.{
     header: Header,
-    allocator: *mem.Allocator,
-    pub fn (self: *Message) deinit() {}
+    content: ?json.ValueTree,
 };

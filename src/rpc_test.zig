@@ -8,8 +8,8 @@ test "Reader" {
     const src = "Content-Length: 43\r\n\r\n{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"example\"}";
     var stream = io.SliceInStream.init(src);
     var rd = rpc.Reader.{ .allocator = std.debug.global_allocator };
-    const h = try rd.readStream(&stream.stream);
-    if (h.content_length != 43) {
-        try t.terrorf("expected content_length to be 43 got {} instead\n", h.content_length);
+    const m = try rd.read(&stream.stream);
+    if (m.header.content_length != 43) {
+        try t.terrorf("expected content_length to be 43 got {} instead\n", m.header.content_length);
     }
 }
