@@ -66,3 +66,12 @@ pub const Header = struct.{
     /// application/vscode-jsonrpc; charset=utf-8
     content_type: ?[]const u8,
 };
+
+// Message defines a json-rpc message. This consist of a header and content.
+// Make sure you cann deinit after you are done with the messsage to freeup
+// resources.
+pub const Message = struct.{
+    header: Header,
+    allocator: *mem.Allocator,
+    pub fn (self: *Message) deinit() {}
+};
