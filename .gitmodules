@@ -1,0 +1,3 @@
+[submodule "src/zson"]
+	path = src/zson
+	url = git@github.com:gernest/zson.git
