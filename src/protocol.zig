@@ -3,6 +3,7 @@ const json = @import("./zson/src/main.zig");
 const mem = std.mem;
 const warn = std.debug.warn;
 const Channel = std.event.Channel;
+const ArenaAllocator = std.heap.ArenaAllocator;
 
 pub const json_rpc_version = "2.0";
 
@@ -10,12 +11,56 @@ pub const RequestMessage = struct.{
     jsonrpc: []const u8,
     id: ID,
     params: ?json.Value,
+
+    pub fn toJson(self: RequestMessage, a: *ArenaAllocator) !json.Value {
+        var obj = json.ObjectMap.init(&a.allocator);
+        const rpc_version_value = json.Value.{ .String = self.jsonrpc };
+        const id_value = self.id.json();
+        _ = try obj.put("jsonrpc", rpc_version_value);
+        _ = try obj.put("id", id_value);
+        if (self.params != null) {
+            _ = try obj.put("params", self.params.?);
+        }
+        return json.Value.{ .Object = obj };
+    }
 };
+
+test "RequestMessage.encode" {
+    var b = try std.Buffer.init(std.debug.global_allocator, "");
+    var buf = &b;
+    defer buf.deinit();
+    var stream = &std.io.BufferOutStream.init(buf).stream;
+
+    const req = RequestMessage.{
+        .jsonrpc = json_rpc_version,
+        .id = ID.{ .Number = 10 },
+        .params = null,
+    };
+    var arena = ArenaAllocator.init(std.debug.global_allocator);
+    const value = try req.toJson(&arena);
+    try value.dump(stream);
+    warn("{}\n", buf.toSlice());
+}
 
 pub const ID = union(enum).{
     String: []const u8,
     Number: i64,
     Null,
+
+    pub fn toJson(self: ID, a: *ArenaAllocator) json.Value {
+        switch (self) {
+            ID.String => |v| {
+                return json.Value.{ .String = v };
+            },
+            ID.Number => |v| {
+                return json.Value.{ .Integer = v };
+            },
+            ID.Null => |v| {
+                return json.Value.Null;
+            },
+            else => unreachable,
+        }
+    }
 };
 
 pub const ResponseMessage = struct.{
