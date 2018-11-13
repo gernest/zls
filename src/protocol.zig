@@ -2,6 +2,7 @@ const std = @import("std");
 const json = @import("./zson/src/main.zig");
 const mem = std.mem;
 const warn = std.debug.warn;
+const Channel = std.event.Channel;
 
 pub const json_rpc_version = "2.0";
 
@@ -73,4 +74,19 @@ pub const Header = struct.{
 pub const Message = struct.{
     header: Header,
     content: ?json.ValueTree,
+};
+
+pub const MessageChannel = Channel(Message);
+
+// Bus stores async i/o for rpc messages.
+pub const Bus = struct.{
+    in: *MessageChannel,
+    out: *MessageChannel,
+
+    pub fn init(loop: *std.event.Loop) error!Bus {
+        return Bus.{
+            .in = try MessageChannel.create(loop, 10),
+            .out = try MessageChannel.create(loop, 10),
+        };
+    }
 };
