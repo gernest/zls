@@ -2,7 +2,7 @@ const std = @import("std");
 const protocol = @import("protocol.zig");
 const io = std.io;
 
-pub fn main() error!void {
+pub fn main() anyerror!void {
     var da = std.heap.DirectAllocator.init();
     defer da.deinit();
 
@@ -21,7 +21,7 @@ pub fn main() error!void {
     loop.run();
 }
 
-async fn sync(bus: *protocol.Bus) error!void {
+async fn sync(bus: *protocol.Bus) anyerror!void {
     var out_file = try std.io.getStdOut();
     defer out_file.close();
     var stream = &out_file.outStream().stream;
@@ -32,7 +32,7 @@ async fn sync(bus: *protocol.Bus) error!void {
     }
 }
 
-async fn read(bus: *protocol.Bus) error!void {
+async fn read(bus: *protocol.Bus) anyerror!void {
     var i: usize = 0;
     while (i < 5) : (i += 1) {
         const msg = protocol.Message{

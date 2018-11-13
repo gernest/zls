@@ -18,7 +18,7 @@ const default_message_size: usize = 8192;
 const content_length = "Content-Length";
 
 /// Reader defines method for reading rpc messages.
-pub const Reader = struct{
+pub const Reader = struct {
     allocator: *mem.Allocator,
 
     pub fn init(a: *mem.Allocator) Reader {

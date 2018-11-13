@@ -7,7 +7,7 @@ const ArenaAllocator = std.heap.ArenaAllocator;
 
 pub const json_rpc_version = "2.0";
 
-pub const RequestMessage = struct{
+pub const RequestMessage = struct {
     jsonrpc: []const u8,
     id: ID,
     params: ?json.Value,
@@ -42,7 +42,7 @@ test "RequestMessage.encode" {
     warn("{}\n", buf.toSlice());
 }
 
-pub const ID = union(enum){
+pub const ID = union(enum) {
     String: []const u8,
     Number: i64,
     Null,
@@ -63,14 +63,14 @@ pub const ID = union(enum){
     }
 };
 
-pub const ResponseMessage = struct{
+pub const ResponseMessage = struct {
     jsonrpc: []const u8,
     id: ID,
     result: ?json.Value,
     error_value: ?ResponseError,
 };
 
-pub const ErrorCode = enum(i64){
+pub const ErrorCode = enum(i64) {
     ParseError = -32700,
     InvalidRequest = -32600,
     MethodNotFound = -32601,
@@ -83,20 +83,20 @@ pub const ErrorCode = enum(i64){
     RequestCancelled = -32800,
 };
 
-pub const ResponseError = struct{
+pub const ResponseError = struct {
     code: ErrorCode,
     message: []const u8,
     data: ?json.Value,
 };
 
-pub const NotificationMessage = struct{
+pub const NotificationMessage = struct {
     jsonrpc: []const u8,
     id: ID,
     method: []const u8,
     params: ?json.Value,
 };
 
-pub const CancelParam = struct{
+pub const CancelParam = struct {
     id: ID,
 };
 
@@ -104,7 +104,7 @@ pub const CancelParam = struct{
 /// \r\r.
 ///
 /// It is a must to have at least one field.
-pub const Header = struct{
+pub const Header = struct {
     /// The length of the content part in bytes
     content_length: u64,
 
@@ -116,7 +116,7 @@ pub const Header = struct{
 // Message defines a json-rpc message. This consist of a header and content.
 // Make sure you cann deinit after you are done with the messsage to freeup
 // resources.
-pub const Message = struct{
+pub const Message = struct {
     header: Header,
     content: ?json.ValueTree,
 };
@@ -124,11 +124,11 @@ pub const Message = struct{
 pub const MessageChannel = Channel(Message);
 
 // Bus stores async i/o for rpc messages.
-pub const Bus = struct{
+pub const Bus = struct {
     in: *MessageChannel,
     out: *MessageChannel,
 
-    pub fn init(loop: *std.event.Loop) error!Bus {
+    pub fn init(loop: *std.event.Loop) anyerror!Bus {
         return Bus{
             .in = try MessageChannel.create(loop, 10),
             .out = try MessageChannel.create(loop, 10),
