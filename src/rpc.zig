@@ -9,7 +9,7 @@ const proto = @import("protocol.zig");
 const builtin = @import("builtin");
 const json = @import("./zson/src/main.zig");
 
-pub const ReadError = os.File.ReadError || error.{BadInput};
+pub const ReadError = os.File.ReadError || error{BadInput};
 pub const InStream = io.InStream(ReadError);
 const default_message_size: usize = 8192;
 
@@ -18,11 +18,11 @@ const default_message_size: usize = 8192;
 const content_length = "Content-Length";
 
 /// Reader defines method for reading rpc messages.
-pub const Reader = struct.{
+pub const Reader = struct{
     allocator: *mem.Allocator,
 
     pub fn init(a: *mem.Allocator) Reader {
-        return Reader.{ .allocator = a };
+        return Reader{ .allocator = a };
     }
 
     /// readStream decodes a rpc message from stream. stream must implement the
@@ -39,7 +39,7 @@ pub const Reader = struct.{
         defer list.deinit();
         var header: proto.Header = undefined;
         var message: proto.Message = undefined;
-        var crlf = []u8.{0} ** 2;
+        var crlf = []u8{0} ** 2;
         var in_header = true;
         var end_content_length = false;
         var balanced: usize = 0;

@@ -35,8 +35,8 @@ async fn sync(bus: *protocol.Bus) error!void {
 async fn read(bus: *protocol.Bus) error!void {
     var i: usize = 0;
     while (i < 5) : (i += 1) {
-        const msg = protocol.Message.{
-            .header = protocol.Header.{
+        const msg = protocol.Message{
+            .header = protocol.Header{
                 .content_length = @intCast(u64, i),
                 .content_type = null,
             },
