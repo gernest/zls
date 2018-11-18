@@ -15,7 +15,7 @@ pub const RequestMessage = struct {
     pub fn toJson(self: RequestMessage, a: *ArenaAllocator) !json.Value {
         var obj = json.ObjectMap.init(&a.allocator);
         const rpc_version_value = json.Value{ .String = self.jsonrpc };
-        const id_value = self.id.json();
+        const id_value = self.id.toJson(a);
         _ = try obj.put("jsonrpc", rpc_version_value);
         _ = try obj.put("id", id_value);
         if (self.params != null) {

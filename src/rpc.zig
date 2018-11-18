@@ -46,7 +46,11 @@ pub const Reader = struct {
         while (true) {
             const ch = try stream.readByte();
             switch (ch) {
-                '\r' => if (in_header) crlf[0] = '\r',
+                '\r' => {
+                    if (in_header) {
+                        crlf[0] = '\r';
+                    }
+                },
                 '\n' => {
                     if (in_header) {
                         if (crlf[0] != '\r') {
