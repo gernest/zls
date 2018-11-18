@@ -1,4 +1,5 @@
 # zls
+[![Build Status](https://travis-ci.org/gernest/zls.svg?branch=master)](https://travis-ci.org/gernest/zls)
 
 zig language server
 
