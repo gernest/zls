@@ -7,14 +7,20 @@ const ArenaAllocator = std.heap.ArenaAllocator;
 
 pub const json_rpc_version = "2.0";
 
-// JSON is an interface for encoding/decoding json values. We use ArenaAllocator
-// here for consistency and making it easy to free memory after the
-// encoding/decoding is done..
-//
-// It is recommended to use the allocator passed for all allocations done by
-// memebers which implement this interface.
+/// JSON is an interface for encoding/decoding json values. We use ArenaAllocator
+/// here for consistency and making it easy to free memory after the
+/// encoding/decoding is done..
+///
+/// It is recommended to use the allocator passed for all allocations done by
+/// memebers which implement this interface.
 pub const JSON = struct {
     marshalJSON: fn (self: *JSON, a: *ArenaAllocator) !json.Value,
+};
+
+/// Value wraps JSON interface and json.Value togather.
+pub const Value = union(enum) {
+    value: json.Value,
+    json: *JSON,
 };
 
 pub const RequestMessage = struct {
