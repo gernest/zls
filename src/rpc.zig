@@ -26,7 +26,7 @@ pub const Reader = struct {
     }
 
     /// readStream decodes a rpc message from stream. stream must implement the
-    /// ioo.Instream interface.
+    /// io.Instream interface.
     ///
     /// This reads one byte at a time from the stream. No verification of the
     /// message is done , meaning we don't check if the content has the same
